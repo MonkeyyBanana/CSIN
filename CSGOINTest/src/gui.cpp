@@ -9,7 +9,7 @@
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK WindowProcess(HWND window, UINT message, WPARAM wideParam, LPARAM longParam);
 
-bool goo::setupWindowClass(const char* windowClassName) noexcept {
+bool Goo::setupWindowClass(const char* windowClassName) noexcept {
 	windowClass.cbSize = sizeof(WNDCLASSEX);
 	windowClass.style = CS_VREDRAW | CS_HREDRAW;
 	windowClass.lpfnWndProc = DefWindowProc;
@@ -28,11 +28,11 @@ bool goo::setupWindowClass(const char* windowClassName) noexcept {
 	return TRUE;
 }
 
-void goo::destroyWindowClass() noexcept {
+void Goo::destroyWindowClass() noexcept {
 	UnregisterClass(windowClass.lpszClassName, windowClass.hInstance);
 }
 
-bool goo::setupWindow(const char* windowName) noexcept {
+bool Goo::setupWindow(const char* windowName) noexcept {
 	window = CreateWindow(windowClass.lpszClassName, windowName, WS_OVERLAPPEDWINDOW, 0, 0, 50, 50, 0, 0, windowClass.hInstance, 0);
 
 	if (!window)
@@ -40,13 +40,13 @@ bool goo::setupWindow(const char* windowName) noexcept {
 	return TRUE;
 }
 
-bool goo::destroyWindow() noexcept {
+bool Goo::destroyWindow() noexcept {
 	if (window)
 		DestroyWindow(window);
 }
 
-bool goo::setupDirectX() noexcept {
-	const auto handle = GetModuleHandle("d3d9.dll");
+bool Goo::setupDirectX() noexcept {
+	const HMODULE handle = GetModuleHandle("d3d9.dll");
 
 	if (!handle)
 		return FALSE;
@@ -83,7 +83,7 @@ bool goo::setupDirectX() noexcept {
 	return TRUE;
 }
 
-bool goo::destroyDirectX() noexcept {
+bool Goo::destroyDirectX() noexcept {
 	if (device) {
 		device->Release();
 		device = NULL;
@@ -95,7 +95,7 @@ bool goo::destroyDirectX() noexcept {
 	}
 }
 
-void goo::Setup() {
+void Goo::Setup() {
 	srand((unsigned)time(NULL) * 11);
 	if (!setupWindowClass(Utils::randomCharStr(7 + rand() % (64 - 7 + 1))))
 		throw std::runtime_error("Failed Window Class");
@@ -110,7 +110,7 @@ void goo::Setup() {
 	destroyWindowClass();
 }
 
-void goo::setupMenu(LPDIRECT3DDEVICE9 device) noexcept {
+void Goo::setupMenu(LPDIRECT3DDEVICE9 device) noexcept {
 	auto params = D3DDEVICE_CREATION_PARAMETERS{ };
 	device->GetCreationParameters(&params);
 
@@ -127,7 +127,7 @@ void goo::setupMenu(LPDIRECT3DDEVICE9 device) noexcept {
 	setup = true;
 }
 
-void goo::destroy() {
+void Goo::destroy() {
 	ImGui_ImplDX9_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
@@ -137,16 +137,25 @@ void goo::destroy() {
 	destroyDirectX();
 }
 
-void goo::render() {
+void Goo::render() {
+	ImGui_ImplDX9_NewFrame();
+	ImGui_ImplWin32_NewFrame();
+	ImGui::NewFrame();
 
+	ImGui::Begin("Banana Trading Interface", &open);
+	ImGui::End();
+
+	ImGui::EndFrame();
+	ImGui::Render();
+	ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 }
 
 LRESULT CALLBACK WindowProcess(HWND window, UINT message, WPARAM wideParam, LPARAM longParam) {
 	if (GetAsyncKeyState(VK_INSERT) & 1)
-		goo::open = !goo::open;
+		Goo::open = !Goo::open;
 
-	if (goo::open && ImGui_ImplWin32_WndProcHandler(window, message, wideParam, longParam))
+	if (Goo::open && ImGui_ImplWin32_WndProcHandler(window, message, wideParam, longParam))
 		return 1L;
 
-	return CallWindowProc(goo::ogWindowProcess, window, message, wideParam, longParam);
+	return CallWindowProc(Goo::ogWindowProcess, window, message, wideParam, longParam);
 }

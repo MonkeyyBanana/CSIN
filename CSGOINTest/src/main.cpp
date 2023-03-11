@@ -4,15 +4,37 @@
 #include <cstdint>
 #include <thread>
 
-void setup(const HMODULE process) {
+#include "hooks.h"
 
+void setup(const HMODULE process) {
+	try {
+		Goo::Setup();
+		Hooks::setup();
+	}
+	catch (const std::exception& e) {
+		MessageBeep(MB_ICONERROR);
+		MessageBox(
+			0,
+			e.what(),
+			"monkey trader failed",
+			MB_OK | MB_ICONEXCLAMATION
+		);
+	}
+
+	while (!GetAsyncKeyState(VK_END)) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(200));
+	}
+
+	Hooks::destroy();
+	Goo::destroy();
+	FreeLibraryAndExitThread(process, 0);
 }
 
 int __stdcall DllMain(const HMODULE process, const std::uintptr_t reason, const void* reserved) {
 	if (reason == DLL_PROCESS_ATTACH) {
 		DisableThreadLibraryCalls(process);
 
-		const auto thread = CreateThread(nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(setup), process, 0, nullptr);
+		const HANDLE thread = CreateThread(nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(setup), process, 0, nullptr);
 
 		if (thread)
 			CloseHandle(thread);
